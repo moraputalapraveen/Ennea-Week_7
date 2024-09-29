@@ -1,53 +1,63 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, TouchableOpacity, Modal, Alert, StyleSheet } from 'react-native';
+import { View, TextInput, FlatList, TouchableOpacity, Modal, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { StatusBar } from 'react-native';
+import styled from 'styled-components/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function App() {
   const [tasks, settasks] = useState([]);
-  const [search,setsearch]=useState('')
+  const [search, setsearch] = useState('');
   const [title, settitle] = useState('');
   const [date, setdate] = useState(new Date());
   const [showdatepicker, setshowdatepicker] = useState(false);
   const [showtimepicker, setshowtimepicker] = useState(false);
   const [modalvisible, setmodalvisible] = useState(false);
+  const [editingtask, seteditingtask] = useState(null); // to track the task being edited
 
-  
-  const handlesearch = (text) => {
-    
-    setsearch(text)
-  };
+  const handlesearch = (text) => setsearch(text);
 
- 
-  const Handleaddtask = () => {
+  const handleaddtask = () => {
     if (!title) {
       Alert.alert('Error', 'Please enter a title');
       return;
     }
 
-    settasks([...tasks, { id: Date.now(), title, date: date.toLocaleString() }]);
+    if (editingtask) {
+      const updatedtasks = tasks.map((task) =>
+        task.id === editingtask.id ? { ...task, title, date: date.toLocaleString() } : task
+      );
+      settasks(updatedtasks);
+      seteditingtask(null);
+    } else {
+      settasks([...tasks, { id: Date.now(), title, date: date.toLocaleString() }]);
+    }
+
     settitle('');
     setdate(new Date());
-    setmodalvisible(false); 
+    setmodalvisible(false);
   };
 
-  
-  const Datepickerhandler = () => {
-    setshowdatepicker(true);
+  const handleedittask = (task) => {
+    settitle(task.title);
+    setdate(new Date(task.date));
+    seteditingtask(task);
+    setmodalvisible(true);
   };
 
-  const Timepickerhandler = () => {
-    setshowtimepicker(true);
+  const handledeletetask = (taskid) => {
+    settasks(tasks.filter((task) => task.id !== taskid));
   };
 
-  const Handledatechange = (event, selectedDate) => {
-    if (selectedDate) {
-      setdate(selectedDate);
-    }
+  const datepickerhandler = () => setshowdatepicker(true);
+  const timepickerhandler = () => setshowtimepicker(true);
+
+  const handledatechange = (event, selectedDate) => {
+    if (selectedDate) setdate(selectedDate);
     setshowdatepicker(false);
   };
 
-  const Handletimechange = (event, selectedTime) => {
+  const handletimechange = (event, selectedTime) => {
     if (selectedTime) {
       const currentDate = new Date(date);
       currentDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
@@ -56,198 +66,214 @@ export default function App() {
     setshowtimepicker(false);
   };
 
-
-  const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(search.toLowerCase()));
-
+  const filteredtasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <View style={styles.container}>
+    <>
+    <Title>TODO APP</Title>
+    <Container>
+      <StatusBar backgroundColor="black"  />
       
-      <StatusBar backgroundcolor="green" />
-      <Text style={styles.title1}>Your Taks</Text>
-      <TextInput
+      <SearchInput
         placeholder="Search Tasks"
         value={search}
         onChangeText={handlesearch}
-        style={styles.searchinput}
       />
 
-    
       <FlatList
-        data={filteredTasks}
-        keyExtractor={(item) => item.id}
+        data={filteredtasks}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.taskcontainer}>
-            <Text style={styles.tasktitle}>{item.title}</Text>
-            <Text style={styles.taskdate}>{item.date}</Text>
-          </View>
+          <TaskContainer>
+            <TaskTitle>{item.title}</TaskTitle>
+            <TaskDate>{item.date}</TaskDate>
+            <TaskActions>
+              <Icon
+                name="edit"
+                size={24}
+                color="blue"
+                onPress={() => handleedittask(item)}
+              />
+              <Icon
+                name="delete"
+                size={24}
+                color="red"
+                onPress={() => handledeletetask(item.id)}
+                style={{ marginLeft: 15 }}
+              />
+            </TaskActions>
+          </TaskContainer>
         )}
       />
 
-      
-      <TouchableOpacity
-        style={styles.floatingbutton}
-        onPress={() => setmodalvisible(true)}
-      >
-        <Text style={styles.floatingbuttontext}>+</Text>
-      </TouchableOpacity>
+      <AddButton onPress={() => setmodalvisible(true)}>
+        <AddButtonText>+</AddButtonText>
+      </AddButton>
 
-    
-      <Modal
-        visible={modalvisible}
-        transparent={true}
-        animationType="slide"
-      
-      >
-        <View style={styles.modalcontainer}>
-          <View style={styles.modalcontent}>
-            <Text style={styles.modaltitle}>Add Task</Text>
-           
-            <TextInput
+      <Modal visible={modalvisible} transparent={true} animationType="slide">
+        <ModalContainer>
+          <ModalContent>
+            <ModalTitle>{editingtask ? 'Edit Task' : 'Add Task'}</ModalTitle>
+            <TaskInput
               placeholder="Enter Task Title"
               value={title}
               onChangeText={settitle}
-              style={styles.input}
             />
-
-            <TouchableOpacity onPress={Datepickerhandler}>
-              <Text style={styles.datepickertext}>
-                Select Date: {date.toDateString()}
-              </Text>
+            <TouchableOpacity onPress={datepickerhandler}>
+              <DatePickerText>Select Date: {date.toDateString()}</DatePickerText>
             </TouchableOpacity>
 
             {showdatepicker && (
               <DateTimePicker
                 value={date}
                 mode="date"
-                onChange={Handledatechange}
+                onChange={handledatechange}
               />
             )}
 
-            <TouchableOpacity onPress={Timepickerhandler}>
-              <Text style={styles.datepickertext}>
-                Select Time: {date.toTimeString()}
-              </Text>
+            <TouchableOpacity onPress={timepickerhandler}>
+              <DatePickerText>Select Time: {date.toTimeString()}</DatePickerText>
             </TouchableOpacity>
 
             {showtimepicker && (
               <DateTimePicker
                 value={date}
                 mode="time"
-                
-                onChange={Handletimechange}
+                onChange={handletimechange}
               />
             )}
 
-            <Button title="Add Task" style={styles.modalbutton} onPress={Handleaddtask} />
+            <Button title="Save Task" onPress={handleaddtask} />
 
-            <TouchableOpacity onPress={() => setmodalvisible(false)} style={styles.closebutton}>
-              <Text style={styles.closebuttontext}>Close</Text>
-            </TouchableOpacity>
-            
-            
-          </View>
-        </View>
+            <CloseButton onPress={() => setmodalvisible(false)}>
+              <CloseButtonText>Close</CloseButtonText>
+            </CloseButton>
+          </ModalContent>
+        </ModalContainer>
       </Modal>
-    </View>
+    </Container>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f7f4f0',
-  },
-  title1:
-  {
-    fontSize:30,
-    fontWeight:'bold',
-    textAlign:'center'
-  },
-  modalbutton:{
-    marginBottom:20,
-    backgroundColor:"blue"
-  },
-  searchinput: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  taskcontainer: {
-    justifyContent: 'space-between',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom:20,
-    borderRadius:5,
+// Styled components
+const Container = styled.View`
+  flex: 1;
+  padding-left:20px;
+  padding-top:20px;
+  padding-right: 20px;
+  
+  background-color: antiquewhite;
+`;
 
-  },
-  tasktitle: {
-    fontSize: 16,
-  },
-  taskdate: {
-    fontSize: 14,
-    color: 'gray',
-  },
-  floatingbutton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#1E90FF',
-    borderRadius: 50,
-    width: 60,
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  floatingbuttontext: {
-    color: '#fff',
-    fontSize: 24,
-  },
-  modalcontainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalcontent: {
-    width: 300,
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-  },
-  modaltitle: {
-    fontSize: 20,
-    marginBottom: 20,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-  },
-  datepickertext: {
-    marginBottom: 10,
-    color: '#1E90FF',
-    
-  },
+const Title = styled.Text`
+  font-size: 30px;
+  font-weight: bold;
+  text-align: center;
+  background-color: aqua;
+  padding-top: 8;
+  height: 50;
+  text-align: center;
+`;
 
-  closebutton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: '#ff6666',
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  closebuttontext: {
-    color: '#fff',
-    fontSize: 16,
-  },
-});
+const SearchInput = styled.TextInput`
+  height: 40px;
+  border-color: gray;
+  border-width: 1px;
+  margin-bottom: 20px;
+  padding-horizontal: 10px;
+  border-radius: 5px;
+`;
+
+const TaskContainer = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 10px;
+  border-width: 1px;
+  border-color: #ddd;
+  margin-bottom: 20px;
+  border-radius: 5px;
+`;
+
+const TaskTitle = styled.Text`
+  font-size: 16px;
+`;
+
+const TaskDate = styled.Text`
+  font-size: 14px;
+  color: gray;
+`;
+
+const TaskActions = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const AddButton = styled.TouchableOpacity`
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  background-color: #1e90ff;
+  border-radius: 50px;
+  width: 60px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+`;
+
+const AddButtonText = styled.Text`
+  color: white;
+  font-size: 24px;
+`;
+
+const ModalContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+`;
+
+const ModalContent = styled.View`
+  width: 300px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+`;
+
+const ModalTitle = styled.Text`
+  font-size: 20px;
+  margin-bottom: 20px;
+`;
+
+const TaskInput = styled.TextInput`
+  height: 40px;
+  border-color: gray;
+  border-width: 1px;
+  margin-bottom: 20px;
+  padding-horizontal: 10px;
+  border-radius: 5px;
+`;
+
+const DatePickerText = styled.Text`
+  margin-bottom: 10px;
+  color: #1e90ff;
+`;
+
+const Button = styled.Button`
+  margin-bottom: 20px;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #ff6666;
+  border-radius: 5px;
+  align-items: center;
+`;
+
+const CloseButtonText = styled.Text`
+  color: white;
+  font-size: 16px;
+`;

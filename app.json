@@ -1,18 +1,19 @@
 {
   "expo": {
     "name": "Todo",
-    "slug": "Todo",
+    "slug": "simple3",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/todo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/todo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "."
     },
     "android": {
       "adaptiveIcon": {
@@ -28,6 +29,10 @@
       "eas": {
         "projectId": "353a9d19-f0b2-4c36-9a05-0a4bec33c296"
       }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/353a9d19-f0b2-4c36-9a05-0a4bec33c296"
     }
   }
 }
